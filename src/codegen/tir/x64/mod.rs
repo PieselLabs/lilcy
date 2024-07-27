@@ -1,6 +1,8 @@
+mod emit_mc;
+
 use crate::codegen::tir::{TargetInstr, TargetReg};
 use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{write, Display, Formatter};
 
 #[derive(Copy, Clone)]
 pub enum X64Reg {
@@ -50,9 +52,37 @@ impl TargetReg for X64Reg {}
 type Reg = super::Reg<X64Reg>;
 
 #[derive(Copy, Clone)]
+pub struct Mem {
+    pub reg: Reg,
+    index: Option<Reg>,
+    scale: u8,
+    disp: i64,
+}
+
+impl Display for Mem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let reg = self.reg;
+        let scale = self.scale;
+        let disp = self.disp;
+
+        write!(f, "[{reg}")?;
+        if let Some(idx) = self.index {
+            write!(f, "+{idx}*{scale}")?;
+        }
+        write!(f, "]")?;
+
+        if disp != 0 {
+            write!(f, "+{disp}")?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Copy, Clone)]
 pub enum Inst {
     MOV64rr { src: Reg, dst: Reg },
-    MOV64rm { src: Reg, dst: Reg },
+    MOV64rm { src: Reg, dst: Mem },
 }
 
 impl TargetInstr for Inst {}
