@@ -1,4 +1,4 @@
-mod emit_mc;
+pub mod emit_mc;
 
 use crate::codegen::tir::{TargetInstr, TargetReg};
 use std::fmt;

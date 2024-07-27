@@ -1,5 +1,6 @@
 use crate::codegen::tir::x64::{Inst, X64Reg};
 use crate::codegen::tir::x64::{Mem, Reg};
+use crate::codegen::tir::{Block, Module};
 use iced_x86::code_asm::*;
 
 pub trait EmitMC {
@@ -61,5 +62,23 @@ impl EmitMC for Inst {
                 asm.mov(dst, src)
             }
         }
+    }
+}
+
+impl EmitMC for Block<Inst> {
+    fn emit(&self, asm: &mut CodeAssembler) -> Result<(), IcedError> {
+        for inst in &self.instructions {
+            inst.emit(asm)?;
+        }
+        Ok(())
+    }
+}
+
+impl EmitMC for Module<Inst> {
+    fn emit(&self, asm: &mut CodeAssembler) -> Result<(), IcedError> {
+        for block in &self.blocks {
+            block.emit(asm)?;
+        }
+        Ok(())
     }
 }

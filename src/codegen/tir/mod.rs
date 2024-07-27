@@ -28,7 +28,7 @@ impl<T: TargetReg> Display for Reg<T> {
 pub trait TargetInstr: Display + Sized + Copy {}
 
 pub struct Block<I: TargetInstr> {
-    pub(crate) instructions: Vec<I>,
+    pub instructions: Vec<I>,
 }
 
 impl<I: TargetInstr> Block<I> {
@@ -40,7 +40,7 @@ impl<I: TargetInstr> Block<I> {
 }
 
 pub struct Module<I: TargetInstr> {
-    pub(crate) blocks: Vec<Block<I>>,
+    pub blocks: Vec<Block<I>>,
 }
 
 impl<I: TargetInstr> Module<I> {
