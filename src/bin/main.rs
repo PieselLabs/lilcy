@@ -9,8 +9,8 @@ fn main() {
     let mut b = Block::<x64::X64Inst>::new();
 
     b.instructions.push(x64::X64Inst::MOV64rr {
-        src: Reg::Concrete(x64::X64Reg::AX),
-        dst: Reg::Concrete(x64::X64Reg::AX),
+        src: Reg::Fixed(x64::X64Reg::AX),
+        dst: Reg::Fixed(x64::X64Reg::AX),
     });
 
     m.blocks.push(b);

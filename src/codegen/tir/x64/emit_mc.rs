@@ -22,7 +22,7 @@ pub trait EmitMC {
 }
 
 fn convert_to_iced_reg64(r: Reg) -> AsmRegister64 {
-    if let Reg::Concrete(r) = r {
+    if let Reg::Fixed(r) = r {
         match r {
             X64Reg::AX => rax,
             X64Reg::BX => rbx,

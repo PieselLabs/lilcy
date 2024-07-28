@@ -12,7 +12,7 @@ pub trait TargetReg: Display + Sized + Copy {}
 
 #[derive(Copy, Clone)]
 pub enum Reg<T: TargetReg> {
-    Concrete(T),
+    Fixed(T),
     Virtual(i16),
 }
 
@@ -23,7 +23,7 @@ pub enum GenericInstruction {
 impl<T: TargetReg> Display for Reg<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Reg::Concrete(r) => r.fmt(f),
+            Reg::Fixed(r) => r.fmt(f),
             Reg::Virtual(id) => write!(f, "$vreg{id}"),
         }
     }
