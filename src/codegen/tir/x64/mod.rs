@@ -1,6 +1,6 @@
 pub mod emit_mc;
 
-use crate::codegen::tir::{TargetInstr, TargetReg};
+use crate::codegen::tir::{TargetInst, TargetReg};
 use std::fmt;
 use std::fmt::{write, Display, Formatter};
 
@@ -24,6 +24,8 @@ pub enum X64Reg {
     R13,
     R14,
     R15,
+
+    EFLAGS,
 }
 impl Display for X64Reg {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -44,6 +46,7 @@ impl Display for X64Reg {
             X64Reg::R13 => write!(f, "$r13"),
             X64Reg::R14 => write!(f, "$r14"),
             X64Reg::R15 => write!(f, "$r15"),
+            X64Reg::EFLAGS => write!(f, "$eflags"),
         }
     }
 }
@@ -56,7 +59,7 @@ pub struct Mem {
     pub reg: Reg,
     index: Option<Reg>,
     scale: u8,
-    disp: i64,
+    disp: i32,
 }
 
 impl Display for Mem {
@@ -80,18 +83,40 @@ impl Display for Mem {
 }
 
 #[derive(Copy, Clone)]
-pub enum Inst {
-    MOV64rr { src: Reg, dst: Reg },
-    MOV64rm { src: Reg, dst: Mem },
+pub enum JumpTarget {
+    BB(i32),
 }
 
-impl TargetInstr for Inst {}
+impl Display for JumpTarget {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            JumpTarget::BB(idx) => write!(f, "%{idx}"),
+        }
+    }
+}
 
-impl Display for Inst {
+#[derive(Copy, Clone)]
+pub enum X64Inst {
+    MOV64rr { src: Reg, dst: Reg },
+    MOV64rm { src: Reg, dst: Mem },
+    CMP64rr { lhs: Reg, rhs: Reg },
+
+    JLE { target: JumpTarget },
+    JE { target: JumpTarget },
+    JL { target: JumpTarget },
+}
+
+impl TargetInst for X64Inst {}
+
+impl Display for X64Inst {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Inst::MOV64rr { src, dst } => write!(f, "{dst} = MOV64rr {src}"),
-            Inst::MOV64rm { src, dst } => write!(f, "{dst} = MOV64rm {src}"),
+            X64Inst::MOV64rr { src, dst } => write!(f, "{dst} = MOV64rr {src}"),
+            X64Inst::MOV64rm { src, dst } => write!(f, "{dst} = MOV64rm {src}"),
+            X64Inst::CMP64rr { lhs, rhs } => write!(f, "$eflags = CMP64rr {lhs} {rhs}"),
+            X64Inst::JLE { target } => write!(f, "JLE $eflags"),
+            X64Inst::JE { target } => write!(f, "JEQ $eflags"),
+            X64Inst::JL { target } => write!(f, "JLT $eflags"),
         }
     }
 }

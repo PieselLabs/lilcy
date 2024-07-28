@@ -13,25 +13,34 @@ pub trait TargetReg: Display + Sized + Copy {}
 #[derive(Copy, Clone)]
 pub enum Reg<T: TargetReg> {
     Concrete(T),
-    Virtual(i32),
+    Virtual(i16),
+}
+
+pub enum GenericInstruction {
+    BR { block_idx: i16 },
 }
 
 impl<T: TargetReg> Display for Reg<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Reg::Concrete(r) => r.fmt(f),
-            Reg::Virtual(id) => write!(f, "%{id}"),
+            Reg::Virtual(id) => write!(f, "$vreg{id}"),
         }
     }
 }
 
-pub trait TargetInstr: Display + Sized + Copy {}
+pub trait TargetInst: Display + Sized + Copy {}
 
-pub struct Block<I: TargetInstr> {
+pub enum Inst<I: TargetInst> {
+    Generic(GenericInstruction),
+    Target(I),
+}
+
+pub struct Block<I: TargetInst> {
     pub instructions: Vec<I>,
 }
 
-impl<I: TargetInstr> Block<I> {
+impl<I: TargetInst> Block<I> {
     pub fn new() -> Self {
         Self {
             instructions: Vec::new(),
@@ -39,11 +48,11 @@ impl<I: TargetInstr> Block<I> {
     }
 }
 
-pub struct Module<I: TargetInstr> {
+pub struct Func<I: TargetInst> {
     pub blocks: Vec<Block<I>>,
 }
 
-impl<I: TargetInstr> Module<I> {
+impl<I: TargetInst> Func<I> {
     pub fn new() -> Self {
         Self { blocks: Vec::new() }
     }
