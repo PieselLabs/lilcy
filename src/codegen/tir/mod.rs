@@ -1,3 +1,5 @@
+use slotmap::{new_key_type, DefaultKey, SlotMap};
+use std::collections::LinkedList;
 use std::fmt::{Display, Formatter};
 
 pub mod x64;
@@ -36,24 +38,50 @@ pub enum Inst<I: TargetInst> {
     Target(I),
 }
 
-pub struct Block<I: TargetInst> {
-    pub instructions: Vec<I>,
+pub struct Block {
+    pub instructions: LinkedList<InstId>,
 }
 
-impl<I: TargetInst> Block<I> {
+impl Block {
     pub fn new() -> Self {
         Self {
-            instructions: Vec::new(),
+            instructions: LinkedList::new(),
         }
+    }
+
+    pub fn add_instruction(&mut self, inst: InstId) {
+        self.instructions.push_back(inst)
     }
 }
 
+new_key_type! {
+pub struct InstId;
+pub struct BlockId;
+}
+
 pub struct Func<I: TargetInst> {
-    pub blocks: Vec<Block<I>>,
+    pub blocks: LinkedList<BlockId>,
+
+    pub instructions_data: SlotMap<InstId, Inst<I>>,
+    pub blocks_data: SlotMap<BlockId, Block>,
 }
 
 impl<I: TargetInst> Func<I> {
     pub fn new() -> Self {
-        Self { blocks: Vec::new() }
+        Self {
+            blocks: LinkedList::new(),
+            instructions_data: SlotMap::with_key(),
+            blocks_data: SlotMap::with_key(),
+        }
+    }
+
+    pub fn add_instruction(&mut self, inst: Inst<I>) -> InstId {
+        self.instructions_data.insert(inst)
+    }
+
+    pub fn add_block(&mut self) -> (BlockId, &mut Block) {
+        let key = self.blocks_data.insert(Block::new());
+        self.blocks.push_back(key);
+        (key, &mut self.blocks_data[key])
     }
 }

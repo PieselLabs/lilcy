@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 iced-x86 = { version = "1.21.0", features = ["code_asm"] }
+slotmap = "1.0.7"

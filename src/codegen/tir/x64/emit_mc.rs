@@ -1,25 +1,8 @@
 use crate::codegen::tir::x64::{JumpTarget, X64Inst, X64Reg};
 use crate::codegen::tir::x64::{Mem, Reg};
-use crate::codegen::tir::{Block, Func};
+use crate::codegen::tir::{Block, BlockId, Func, Inst};
 use iced_x86::code_asm::*;
-use std::collections::HashMap;
-
-pub struct X64AsmPrinter {
-    asm: CodeAssembler,
-    block_labels: HashMap<i32, CodeLabel>,
-}
-
-impl X64AsmPrinter {
-    pub fn new() -> Self {
-        Self {
-            asm: CodeAssembler::new(64).unwrap(),
-            block_labels: HashMap::new(),
-        }
-    }
-}
-pub trait EmitMC {
-    fn emit(&self, p: &mut X64AsmPrinter) -> Result<(), IcedError>;
-}
+use slotmap::SecondaryMap;
 
 fn convert_to_iced_reg64(r: Reg) -> AsmRegister64 {
     if let Reg::Fixed(r) = r {
@@ -62,58 +45,70 @@ fn convert_to_iced_mem64(r: &Mem) -> AsmMemoryOperand {
     res
 }
 
-impl EmitMC for X64Inst {
-    fn emit(&self, p: &mut X64AsmPrinter) -> Result<(), IcedError> {
-        match self {
-            X64Inst::MOV64rr { src, dst } => {
-                let src = convert_to_iced_reg64(*src);
-                let dst = convert_to_iced_reg64(*dst);
-                p.asm.mov(dst, src)
-            }
-            X64Inst::MOV64rm { src, dst } => {
-                let src = convert_to_iced_reg64(*src);
-                let dst = convert_to_iced_mem64(dst);
-                p.asm.mov(dst, src)
-            }
-            X64Inst::CMP64rr { lhs, rhs } => {
-                let lhs = convert_to_iced_reg64(*lhs);
-                let rhs = convert_to_iced_reg64(*rhs);
-                p.asm.cmp(lhs, rhs)
-            }
-            X64Inst::JLE {
-                target: JumpTarget::BB(block),
-            } => p.asm.jle(p.block_labels[block]),
-            X64Inst::JE {
-                target: JumpTarget::BB(block),
-            } => p.asm.je(p.block_labels[block]),
-            X64Inst::JL {
-                target: JumpTarget::BB(block),
-            } => p.asm.jl(p.block_labels[block]),
+fn emit_inst_mc(
+    inst: &X64Inst,
+    asm: &mut CodeAssembler,
+    block_labels: &SecondaryMap<BlockId, CodeLabel>,
+) -> Result<(), IcedError> {
+    match inst {
+        X64Inst::MOV64rr { src, dst } => {
+            let src = convert_to_iced_reg64(*src);
+            let dst = convert_to_iced_reg64(*dst);
+            asm.mov(dst, src)
         }
+        X64Inst::MOV64rm { src, dst } => {
+            let src = convert_to_iced_reg64(*src);
+            let dst = convert_to_iced_mem64(dst);
+            asm.mov(dst, src)
+        }
+        X64Inst::CMP64rr { lhs, rhs } => {
+            let lhs = convert_to_iced_reg64(*lhs);
+            let rhs = convert_to_iced_reg64(*rhs);
+            asm.cmp(lhs, rhs)
+        }
+        X64Inst::JLE {
+            target: JumpTarget::BB(block),
+        } => asm.jle(block_labels[*block]),
+        X64Inst::JE {
+            target: JumpTarget::BB(block),
+        } => asm.je(block_labels[*block]),
+        X64Inst::JL {
+            target: JumpTarget::BB(block),
+        } => asm.jl(block_labels[*block]),
     }
 }
 
-impl EmitMC for Block<X64Inst> {
-    fn emit(&self, asm: &mut X64AsmPrinter) -> Result<(), IcedError> {
-        for inst in &self.instructions {
-            inst.emit(asm)?;
+fn emit_block_mc(
+    block: &Block,
+    f: &Func<X64Inst>,
+    asm: &mut CodeAssembler,
+    block_labels: &SecondaryMap<BlockId, CodeLabel>,
+) -> Result<(), IcedError> {
+    for &id in &block.instructions {
+        let inst = &f.instructions_data[id];
+        if let Inst::Target(inst) = inst {
+            emit_inst_mc(inst, asm, block_labels)?;
+        } else {
+            todo!("return error")
         }
-        Ok(())
     }
+    Ok(())
 }
 
-impl EmitMC for Func<X64Inst> {
-    fn emit(&self, p: &mut X64AsmPrinter) -> Result<(), IcedError> {
-        for (id, _) in self.blocks.iter().enumerate() {
-            let label = p.asm.create_label();
-            p.block_labels.insert(id as i32, label);
-        }
+pub fn emit_mc(f: &Func<X64Inst>) -> Result<(), IcedError> {
+    let mut asm = CodeAssembler::new(64)?;
 
-        for (id, block) in self.blocks.iter().enumerate() {
-            p.asm
-                .set_label(p.block_labels.get_mut(&(id as i32)).unwrap())?;
-            block.emit(p)?;
-        }
-        Ok(())
+    let mut block_labels = SecondaryMap::new();
+
+    for &id in &f.blocks {
+        let label = asm.create_label();
+        block_labels.insert(id, label);
     }
+
+    for &id in &f.blocks {
+        asm.set_label(block_labels.get_mut(id).unwrap())?;
+        let block = &f.blocks_data[id];
+        emit_block_mc(block, f, &mut asm, &block_labels)?;
+    }
+    Ok(())
 }

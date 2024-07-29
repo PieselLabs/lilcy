@@ -1,24 +1,22 @@
-use iced_x86::code_asm::CodeAssembler;
-use lilcy::codegen::tir::x64::emit_mc::{EmitMC, X64AsmPrinter};
-use lilcy::codegen::tir::{x64, Block, Func, Reg};
+use lilcy::codegen::tir::x64::emit_mc::emit_mc;
+use lilcy::codegen::tir::x64::{X64Inst, X64Reg};
+use lilcy::codegen::tir::{x64, Func, Inst, InstId, Reg};
 use std::mem::size_of;
 
 fn main() {
-    let mut m = Func::<x64::X64Inst>::new();
+    let mut f = Func::<X64Inst>::new();
 
-    let mut b = Block::<x64::X64Inst>::new();
+    let inst = f.add_instruction(Inst::Target(X64Inst::MOV64rr {
+        src: Reg::Fixed(X64Reg::AX),
+        dst: Reg::Fixed(X64Reg::AX),
+    }));
 
-    b.instructions.push(x64::X64Inst::MOV64rr {
-        src: Reg::Fixed(x64::X64Reg::AX),
-        dst: Reg::Fixed(x64::X64Reg::AX),
-    });
+    let (_, block) = f.add_block();
 
-    m.blocks.push(b);
+    block.add_instruction(inst);
 
-    // println!("{m}");
+    emit_mc(&f).unwrap();
 
-    let mut p = X64AsmPrinter::new();
-    m.emit(&mut p).unwrap();
-
-    println!("{}", size_of::<x64::X64Inst>());
+    println!("{}", size_of::<X64Inst>());
+    println!("{}", size_of::<InstId>());
 }

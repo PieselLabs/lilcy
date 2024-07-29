@@ -1,8 +1,8 @@
 pub mod emit_mc;
 
-use crate::codegen::tir::{TargetInst, TargetReg};
+use crate::codegen::tir::{BlockId, TargetInst, TargetReg};
 use std::fmt;
-use std::fmt::{write, Display, Formatter};
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone)]
 pub enum X64Reg {
@@ -84,15 +84,7 @@ impl Display for Mem {
 
 #[derive(Copy, Clone)]
 pub enum JumpTarget {
-    BB(i32),
-}
-
-impl Display for JumpTarget {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            JumpTarget::BB(idx) => write!(f, "%{idx}"),
-        }
-    }
+    BB(BlockId),
 }
 
 #[derive(Copy, Clone)]
