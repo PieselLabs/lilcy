@@ -1,4 +1,4 @@
-use slotmap::{new_key_type, DefaultKey, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use std::collections::LinkedList;
 use std::fmt::{Display, Formatter};
 

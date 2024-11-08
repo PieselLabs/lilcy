@@ -106,9 +106,9 @@ impl Display for X64Inst {
             X64Inst::MOV64rr { src, dst } => write!(f, "{dst} = MOV64rr {src}"),
             X64Inst::MOV64rm { src, dst } => write!(f, "{dst} = MOV64rm {src}"),
             X64Inst::CMP64rr { lhs, rhs } => write!(f, "$eflags = CMP64rr {lhs} {rhs}"),
-            X64Inst::JLE { target } => write!(f, "JLE $eflags"),
-            X64Inst::JE { target } => write!(f, "JEQ $eflags"),
-            X64Inst::JL { target } => write!(f, "JLT $eflags"),
+            X64Inst::JLE { target: _ } => write!(f, "JLE $eflags"),
+            X64Inst::JE { target: _ } => write!(f, "JEQ $eflags"),
+            X64Inst::JL { target: _ } => write!(f, "JLT $eflags"),
         }
     }
 }
