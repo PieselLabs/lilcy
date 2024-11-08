@@ -1,22 +1,11 @@
-use lilcy::codegen::tir::x64::emit_mc::emit_mc;
-use lilcy::codegen::tir::x64::{X64Inst, X64Reg};
-use lilcy::codegen::tir::{x64, Func, Inst, InstId, Reg};
-use std::mem::size_of;
+use lilcy::ir::{builder::Builder, func::{Func, Signature}, types::Type};
 
 fn main() {
-    let mut f = Func::<X64Inst>::new();
+    let mut func = Func::new("func".to_string(), Signature{args: vec![Type::I32, Type::I32], ret: Some(Type::I32) });
+    let mut builder = Builder::new(&mut func);
 
-    let inst = f.add_instruction(Inst::Target(X64Inst::MOV64rr {
-        src: Reg::Fixed(X64Reg::AX),
-        dst: Reg::Fixed(X64Reg::AX),
-    }));
+    let entry = builder.add_block();
+    builder.set_insert_point(entry);
 
-    let (_, block) = f.add_block();
-
-    block.add_instruction(inst);
-
-    emit_mc(&f).unwrap();
-
-    println!("{}", size_of::<X64Inst>());
-    println!("{}", size_of::<InstId>());
+    builder.add(builder.get_arg(0), builder.get_arg(1));
 }
