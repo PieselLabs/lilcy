@@ -1,15 +1,14 @@
-use slotmap::new_key_type;
+use crate::impl_key;
 
 use super::{inst::Inst, types::Type};
 
-
-new_key_type! {
-pub struct Value;
+impl_key! {
+    pub struct Value(u32);
 }
 
 pub enum ValueData {
-    Inst {typ: Type, inst: Inst},
-    Arg {typ: Type, idx: u16},
+    Inst { typ: Type, inst: Inst },
+    Arg { typ: Type, idx: u16 },
 }
 
 impl ValueData {

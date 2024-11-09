@@ -1,9 +1,9 @@
-use slotmap::new_key_type;
+use crate::impl_key;
 
 use super::value::Value;
 
-new_key_type! {
-pub struct Inst;
+impl_key! {
+    pub struct Inst(u32);
 }
 
 pub enum BinaryOpcode {
@@ -11,14 +11,14 @@ pub enum BinaryOpcode {
     UAdd,
     Sub,
     Mul,
-    Div
+    Div,
 }
 
 pub struct Binary {
-    pub opcode: BinaryOpcode, 
+    pub opcode: BinaryOpcode,
     pub args: [Value; 2],
 }
 
 pub enum InstData {
-    Binary(Binary)
+    Binary(Binary),
 }

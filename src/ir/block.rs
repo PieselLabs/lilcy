@@ -1,14 +1,14 @@
 use std::collections::LinkedList;
 
-use slotmap::new_key_type;
+use crate::impl_key;
 
 use super::inst::Inst;
 
-new_key_type! {
-    pub struct Block;
+impl_key! {
+    pub struct Block(u16);
 }
 
 #[derive(Default)]
 pub struct BlockData {
-    pub insts: LinkedList<Inst>
+    pub insts: LinkedList<Inst>,
 }
