@@ -3,10 +3,16 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-pub trait Key: Sized + Copy {
+pub trait Key: Sized + Copy + PartialEq + Default {
     fn new(v: usize) -> Self;
 
     fn index(&self) -> usize;
+
+    fn none_val() -> Self;
+
+    fn is_none(self) -> bool {
+        self == Self::none_val()
+    }
 }
 
 pub struct PrimaryMap<K: Key, V> {
@@ -49,17 +55,28 @@ impl<K: Key, V> IndexMut<K> for PrimaryMap<K, V> {
 
 #[macro_export]
 macro_rules! impl_key {
-    (pub struct $entity:ident ($inner_type:ty); ) => {
-        #[derive(Clone, Copy)]
-        pub struct $entity($inner_type);
+    (pub struct $key:ident ($inner_type:ty); ) => {
+        use crate::support::slotmap::Key;
+        #[derive(Clone, Copy, PartialEq)]
+        pub struct $key($inner_type);
 
-        impl crate::support::slotmap::Key for $entity {
+        impl Key for $key {
             fn new(v: usize) -> Self {
                 Self(v as $inner_type)
             }
 
             fn index(&self) -> usize {
                 self.0 as usize
+            }
+
+            fn none_val() -> Self {
+                Self(<$inner_type>::max_value())
+            }
+        }
+
+        impl Default for $key {
+            fn default() -> Self {
+                Self::none_val()
             }
         }
     };
@@ -70,7 +87,7 @@ pub struct SecondaryMap<K: Key, V> {
     phantom: PhantomData<K>,
 }
 
-impl<K: Key, V> SecondaryMap<K, V> {
+impl<K: Key, V: Default> SecondaryMap<K, V> {
     pub fn new() -> Self {
         Self {
             values: Vec::new(),
@@ -80,10 +97,7 @@ impl<K: Key, V> SecondaryMap<K, V> {
 
     pub fn insert(&mut self, key: K, val: V) -> K {
         if self.values.len() <= key.index() {
-            unsafe {
-                self.values.reserve(key.index() - self.values.len() + 1);
-                self.values.set_len(key.index() + 1);
-            }
+            self.values.resize_with(key.index() + 1, Default::default);
         }
         self.values[key.index()] = val;
         key
