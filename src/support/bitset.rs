@@ -3,23 +3,23 @@ use std::fmt::{Display, Formatter};
 
 pub struct BitSet {
     size: usize,
-    values: Vec<u32>
+    buckets: Vec<u32>
 }
 
 impl BitSet {
     pub fn new() -> Self {
         Self {
             size: 0,
-            values: Vec::new(),
+            buckets: Vec::new(),
         }
     }
 
-    fn get_num_batch(index: usize) -> usize {
+    fn get_num_bucket(index: usize) -> usize {
         return index / 32 + 1;
     }
 
-    fn get_bit_pos(index: usize, num_batch: usize) -> usize {
-        return index - (num_batch - 1) * 32;
+    fn get_bit_pos(index: usize) -> usize {
+        return index - (Self::get_num_bucket(index) - 1) * 32;
     }
 
     pub fn size(&self) -> usize {
@@ -27,45 +27,45 @@ impl BitSet {
     }
 
     pub fn set(&mut self, index : usize) {
-        let num_batch = Self::get_num_batch(index);
-        if num_batch > self.values.len() {
-            for _ in 0..(num_batch - self.values.len()) {
-                self.values.push(0);
+        let num_bucket = Self::get_num_bucket(index);
+        if num_bucket > self.buckets.len() {
+            for _ in 0..(num_bucket - self.buckets.len()) {
+                self.buckets.push(0);
             }
         }
-        let bit_pos = Self::get_bit_pos(index, num_batch);
-        self.values[num_batch - 1] |= 1 << bit_pos;
+        let bit_pos = Self::get_bit_pos(index);
+        self.buckets[num_bucket - 1] |= 1 << bit_pos;
         self.size += 1;
     }
 
     pub fn reset(&mut self, index : usize) {
-        assert!(index <= self.values.len() * 32);
-        let mut num_batch = Self::get_num_batch(index);
-        let bit_pos = Self::get_bit_pos(index, num_batch);
-        self.values[num_batch - 1] &= !(1 << bit_pos);
+        assert!(index <= self.buckets.len() * 32);
+        let mut num_bucket = Self::get_num_bucket(index);
+        let bit_pos = Self::get_bit_pos(index);
+        self.buckets[num_bucket - 1] &= !(1 << bit_pos);
         self.size -= 1;
-        while num_batch != 0 && num_batch == self.values.len() && self.values[num_batch - 1] == 0 {
-            self.values.pop();
-            num_batch -= 1;
+        while num_bucket != 0 && num_bucket == self.buckets.len() && self.buckets[num_bucket - 1] == 0 {
+            self.buckets.pop();
+            num_bucket -= 1;
         }
     }
 
     pub fn is_set(&self, index : usize) -> bool {
-        if index >= self.values.len() * 32 {
+        if index >= self.buckets.len() * 32 {
             return false;
         }
-        let num_batch = Self::get_num_batch(index);
-        let bit_pos = Self::get_bit_pos(index, num_batch);
-        return self.values[num_batch - 1] & (1 << bit_pos) != 0;
+        let num_bucket = Self::get_num_bucket(index);
+        let bit_pos = Self::get_bit_pos(index);
+        return self.buckets[num_bucket - 1] & (1 << bit_pos) != 0;
     }
 }
 
 impl Display for BitSet {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let mut res = String::new();
-        for batch in &self.values {
+        for bucket in &self.buckets {
             for i in 0..32 {
-                if batch & (1 << i) != 0 {
+                if bucket & (1 << i) != 0 {
                     res.push_str("1");
                 } else {
                     res.push_str("0");
